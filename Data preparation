@@ -1,0 +1,65 @@
+require(tidyverse)
+require(igraph)
+library(readr)
+library(taRifx)
+
+'%ni%' <- Negate('%in%')
+
+splitter <- function(x){strsplit(x," ")[[1]] %>% as.vector()}
+X2011$X2 <- sapply(X2011$X2, splitter)
+X2011$X1 <- as.character(X2011$X1)
+
+data2011 <- data.frame("from" = character(0), 
+                       "to" = character(0),
+                       stringsAsFactors = FALSE)
+for (i in 1:length(X2011$X1)){
+  temp_df <- expand.grid(X2011$X1[i][[1]], X2011$X2[i][[1]])
+  colnames(temp_df) <- c("from", "to")
+  data2011 <- rbind(data2011, temp_df)
+}
+
+X2021$X2 <- sapply(X2021$X2, splitter)
+X2021$X1 <- as.character(X2021$X1)
+data2021 <- data.frame("from" = character(0), 
+                       "to" = character(0),
+                       stringsAsFactors = FALSE)
+for (i in 1:length(X2021$X1)){
+  temp_df <- expand.grid(X2021$X1[i][[1]], X2021$X2[i][[1]], stringsAsFactors = FALSE)
+  colnames(temp_df) <- c("from", "to")
+  data2021 <- rbind(data2021, temp_df)
+}
+
+data2011<-remove.factors(data2011)
+
+data2011<-data2011[,c("to","from")]
+data2021<-data2021[,c("to","from")]
+colnames(data2011) <- c("from","to")
+colnames(data2021) <- c("from","to")
+
+names2011 <- read_delim("clean2011_v3.csv", 
+                        +     ";", escape_double = FALSE, col_names = c("id","name"), 
+                        +     col_types = cols(X1 = col_character()), 
+                        +     trim_ws = TRUE)
+names2021 <- read_delim("clean2021_v2.csv", 
+                        +     ";", escape_double = FALSE, col_names = c("id","name"), 
+                        +     col_types = cols(X1 = col_character()), 
+                        +     trim_ws = TRUE)
+
+
+data2011_n <- data2011[which((data2011$from %in% names2011$id)|(data2011$to %in% names2011$id)),]
+data2021_n <- data2021[which((data2021$from %in% names2021$id)|(data2021$to %in% names2021$id)),]
+
+for (i in 1:length(data2011_n$from)) {
+  if ((data2011_n$from[i] %in% names2011$id)&(data2011_n$to[i] %in% names2011$id)){next}
+  else if (data2011_n$from[i] %ni% names2011$id){data2011_n$from[i] <- NA}
+  else {data2011_n$to[i] <- NA}
+}
+
+for (i in 1:length(data2021_n$from)) {
+  if ((data2021_n$from[i] %in% names2021$id)&(data2021_n$to[i] %in% names2021$id)){print(i)}
+  else if (data2021_n$from[i] %ni% names2021$id){data2021_n$from[i] <- NA}
+  else {data2021_n$to[i] <- NA}
+}
+
+law_new<-graph_from_data_frame(data2021_n, directed = TRUE) %>% simplify()
+law_old<-graph_from_data_frame(data2011_n, directed = TRUE) %>% simplify()
