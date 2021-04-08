@@ -63,3 +63,45 @@ for (i in 1:length(data2021_n$from)) {
 
 law_new<-graph_from_data_frame(data2021_n, directed = TRUE) %>% simplify()
 law_old<-graph_from_data_frame(data2011_n, directed = TRUE) %>% simplify()
+
+# setting attributes
+
+colnames(names2021) <- c("id", "act")
+colnames(names2011) <- c("id", "act")
+
+ungraph_new <- igraph::as_data_frame(law_new, 'both')
+ungraph_new$vertices$name <- as.double(ungraph_new$vertices$name)
+ungraph_new$vertices <- ungraph_new$vertices %>% 
+  left_join(names2021, c('name'='id'))
+ungraph_new$vertices$type <- NA
+
+for(i in 1:nrow(ungraph_new$vertices)){
+  if (ungraph_new$vertices$name[i] %in% c(10103000)){
+    ungraph_new$vertices$type[i] <- "const"
+  }else if (ungraph_new$vertices$name[i] %in% c(1306500, 10105807, 10108000, 10164072, 
+                                                10200300, 10900200, 12112604, 12124624, 12125178, 
+                                                12125267, 12125268, 12127526, 12128809, 12138258, 
+                                                12138291, 12147594, 12150845)){
+    ungraph_new$vertices$type[i] <- "code"
+    } else if (str_contains(ungraph_new$vertices$act[i], "федеральный закон", ignore.case = TRUE)){
+    ungraph_new$vertices$type[i] <- "fed_law"
+    } else if (str_contains(ungraph_new$vertices$act[i], "федеральный конституционный закон", ignore.case = TRUE)){
+     ungraph_new$vertices$type[i] <- "fed_const_law"
+    } else{
+    ungraph_new$vertices$type[i] <- "other"
+  }
+}
+
+for(i in 1:nrow(ungraph_new$vertices)){
+  if (str_contains(ungraph_new$vertices$act[i], c("правовой анализ","комментарий"), 
+                   ignore.case = TRUE, logic = "OR")){ungraph_new$vertices[-i,]}
+    }
+
+law_new_labels <- graph_from_data_frame(ungraph_new$edges,
+                                   directed = TRUE,
+                                   vertices = ungraph_new$vertices)
+law_new_labels <- simplify(law_new_labels)
+set_vertex_attr(law_new_labels, "act", index = V(law_new_labels), ungraph_new$vertices$act)
+set_vertex_attr(law_new_labels, "type", index = V(law_new_labels), ungraph_new$vertices$type)
+law_new_labels<-delete_vertices(law_new_labels, c(1))
+vertex_attr(law_new_labels, "degree") <- degree(law_new_labels, v = V(law_new_labels), mode = c("in"))
