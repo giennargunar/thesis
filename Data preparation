@@ -2,6 +2,7 @@ require(tidyverse)
 require(igraph)
 library(readr)
 library(taRifx)
+library(sjmisc)
 
 '%ni%' <- Negate('%in%')
 
