@@ -1,0 +1,49 @@
+#bow-tie
+strong21<-igraph::components(main21, mode = "strong")
+sort(table(strong21$membership), decreasing = TRUE)[1]
+#26194 
+#51630
+core21<-names(which(strong21$membership == 26194)) #0.592
+noncore21 <- V(law_new_labels)[which(V(law_new_labels)$name %ni% core21)]$name
+
+bowin21 <- distances(main21, v = V(main21)[which(V(main21)$name %in% noncore21)], 
+                     to = V(main21)[which(V(main21)$name %in% core21)], mode="out")
+bowinres21 <- c()
+for (i in 1:nrow(bowin21)){
+  if (sum(is.infinite(bowin21[i,])) < ncol(bowin21)){
+    bowinres21 <- append(bowinres21, rownames(bowin21)[i])
+  } else {
+    next()
+  }
+} # 0.322 28092
+
+out_tend_21 <- setdiff(noncore21, bowinres21)
+
+bowout21 <- distances(main21, 
+                      v = V(main21)[which(V(main21)$name %in% core21)], 
+                      to = V(main21)[which(V(main21)$name %in% out_tend_21)], mode="out")
+
+bowoutres21 <- c()
+for (i in 1:ncol(bowout21)){
+  if (sum(is.infinite(bowout21[,i])) < nrow(bowout21)){
+    bowoutres21 <- append(bowoutres21, colnames(bowout21)[i])
+  } else {
+    next()
+  }
+} #0.022 1949 - 626 tubes
+
+# tendrils 83806 - (1949+28092+51630) = 2135
+
+nocore21 <- induced_subgraph(main21, vids = which(V(main21)$name %ni% core21))
+
+tubes21 <- distances(nocore21, 
+                     v = V(nocore21)[which(V(nocore21)$name %in% bowinres21)], 
+                     to = V(nocore21)[which(V(nocore21)$name %in% bowoutres21)], mode="out")
+tuberes21 <- c()
+for (i in 1:ncol(tubes21)){
+  if ((sum(!is.infinite(tubes21[,i])) > 0)){
+    tuberes21 <- append(tuberes21, colnames(tubes21)[i])
+  } else {
+    next()
+  }
+} #626
